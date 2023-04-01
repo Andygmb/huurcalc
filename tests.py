@@ -1,5 +1,5 @@
 import unittest
-
+from unittest.mock import patch
 from main import HuurCalc
 
 
@@ -69,6 +69,10 @@ class TestHuurCalc(unittest.TestCase):
     def test_calculate_points(self):
         expected_points = 408.25
         self.assertEqual(self.calculator.calculate_points(), expected_points)
+    @patch('main.HuurCalc.calculate_points', return_value=381.25)
+    def test_estimated_rent_price(self, mock_calculate_points):
+        self.assertEqual(self.calculator.estimated_rent_price, 643.19)
+
 
 
 if __name__ == '__main__':
