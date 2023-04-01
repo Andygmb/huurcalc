@@ -6,6 +6,15 @@ class HuurCalc:
     shared_shower: bool = False # G4
     shared_toilet: bool = False # H4
     total_residents: int = 1 # I4
+    user_input_args = [
+        room_studio_sqm,
+        total_shared_area_sqm,
+        shared_living_room,
+        shared_kitchen,
+        shared_shower,
+        shared_toilet,
+        total_residents
+    ]
 
     # ask shane where these numbers are from
     MAGIC_NUMBER_DEPENDANT_ROOM_MULTIPLIER = 5

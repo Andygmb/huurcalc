@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>HuurCalc</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="container">
+      <h1>HuurCalc</h1>
+      <div class="form-group">
+        <label for="room-studio-sqm">Room/studio sqm:</label>
+        <input type="number" id="room-studio-sqm">
+      </div>
+      <div class="form-group">
+        <label for="total-shared-area-sqm">Total shared area sqm:</label>
+        <input type="number" id="total-shared-area-sqm">
+      </div>
+      <div class="form-group">
+        <label for="shared-living-room">Shared living room:</label>
+        <input type="checkbox" id="shared-living-room">
+      </div>
+      <div class="form-group">
+        <label for="shared-kitchen">Shared kitchen:</label>
+        <input type="checkbox" id="shared-kitchen">
+      </div>
+      <div class="form-group">
+        <label for="shared-shower">Shared shower:</label>
+        <input type="checkbox" id="shared-shower">
+      </div>
+      <div class="form-group">
+        <label for="shared-toilet">Shared toilet:</label>
+        <input type="checkbox" id="shared-toilet">
+      </div>
+      <div class="form-group">
+        <label for="total-residents">Total residents:</label>
+        <input type="number" id="total-residents">
+      </div>
+      <div class="form-group">
+        <button id="calculate-button">Calculate</button>
+      </div>
+      <div class="form-group">
+        <label for="points-output">Points:</label>
+        <output id="points-output"></output>
+      </div>
+      <div class="form-group">
+        <label for="rent-price-output">Estimated rent price:</label>
+        <output id="rent-price-output"></output>
+      </div>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>
