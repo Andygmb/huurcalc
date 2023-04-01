@@ -61,5 +61,83 @@ document.addEventListener('DOMContentLoaded', function() {
     var rentPriceOutput = document.getElementById('rent-price-output');
     pointsOutput.textContent = calculator.calculate_points();
     rentPriceOutput.textContent = calculator.estimated_rent_price;
+
+
+  // Store the state in chrome.storage
+    var state = {
+    roomStudioSqm: roomStudioSqm,
+    totalSharedAreaSqm: totalSharedAreaSqm,
+    sharedLivingRoom: sharedLivingRoom,
+    sharedKitchen: sharedKitchen,
+    sharedShower: sharedShower,
+    sharedToilet: sharedToilet,
+    totalResidents: totalResidents,
+    pointsOutput: calculator.calculate_points(),
+    rentPriceOutput: calculator.estimated_rent_price,
+    };
+    chrome.storage.sync.set(state);
+    });
+
+    // Load the state from chrome.storage
+chrome.storage.sync.get(['roomStudioSqm', 'totalSharedAreaSqm', 'sharedLivingRoom', 'sharedKitchen', 'sharedShower', 'sharedToilet', 'totalResidents', 'pointsOutput', 'rentPriceOutput'], function(data) {
+      var roomStudioSqm = parseInt(data.roomStudioSqm) || 0;
+      var totalSharedAreaSqm = parseInt(data.totalSharedAreaSqm) || 0;
+      var sharedLivingRoom = data.sharedLivingRoom || false;
+      var sharedKitchen = data.sharedKitchen || false;
+      var sharedShower = data.sharedShower || false;
+      var sharedToilet = data.sharedToilet || false;
+      var totalResidents = parseInt(data.totalResidents) || 1;
+      var pointsOutput = parseFloat(data.pointsOutput) || 0.0;
+      var rentPriceOutput = parseFloat(data.rentPriceOutput) || 0.0;
+
+    var roomStudioSqmInput = document.getElementById('room-studio-sqm');
+    var totalSharedAreaSqmInput = document.getElementById('total-shared-area-sqm');
+    var sharedLivingRoomInput = document.getElementById('shared-living-room');
+    var sharedKitchenInput = document.getElementById('shared-kitchen');
+    var sharedShowerInput = document.getElementById('shared-shower');
+    var sharedToiletInput = document.getElementById('shared-toilet');
+    var totalResidentsInput = document.getElementById('total-residents');
+    var pointsOutputInput = document.getElementById('points-output');
+    var rentPriceOutputInput = document.getElementById('rent-price-output');
+
+    if (roomStudioSqm != null) {
+    roomStudioSqmInput.value = data.roomStudioSqm;
+    }
+
+    if (totalSharedAreaSqm != null) {
+    totalSharedAreaSqmInput.value = data.totalSharedAreaSqm;
+    }
+
+    if (sharedLivingRoom!= null) {
+    sharedLivingRoomInput.checked = data.sharedLivingRoom;
+    }
+
+    if (sharedKitchen!= null) {
+    sharedKitchenInput.checked = data.sharedKitchen;
+    }
+
+    if (sharedShower != null) {
+    sharedShowerInput.checked = data.sharedShower;
+    }
+
+    if (sharedToilet != null) {
+    sharedToiletInput.checked = data.sharedToilet;
+    }
+
+    if (totalResidents != null) {
+    totalResidentsInput.value = data.totalResidents;
+    }
+
+    if (pointsOutput != null) {
+    pointsOutputInput.value = data.pointsOutput;
+    }
+
+    if (rentPriceOutput != null) {
+    rentPriceOutputInput.value = data.rentPriceOutput;
+    }
   });
+
+
+
+
 });
