@@ -60,6 +60,29 @@ class HuurCalc:
     # Points from Energy label # AH3
     # =IF(ISBLANK(R24),IF(AND(K23<1976,R22="None"),0,IF(AND(K23>=1976,R22="None"),INDEX($'Energy Data Dont touch'.$A$20:$D$66,MATCH(K23,$'Energy Data Dont touch'.$A$20:$A$66,0),IF(AD3="Single",3,IF(AD3="Multi",4))),IF(K10<=25,VLOOKUP("*"&(R22)&"*",$'Energy Data Dont touch'.$B$3:$D$11,IF(AD3="Single",2,IF(AD3="Multi",3)),),IF(AND(K10>25,K10<=40),VLOOKUP("*"&(R22)&"*",$'Energy Data Dont touch'.$G$3:$I$11,IF(AD3="Single",2,IF(AD3="Multi",3)),0),IF(AND(K10>40,$K10<=200),VLOOKUP("*"&(R22)&"*",$'Energy Data Dont touch'.$L$3:$N$11,IF(AD3="Single",2,IF(AD3="Multi",3)),0)))))),VLOOKUP(R24,$'Energy Data Dont touch'.$G$19:$I$319,IF(AD3="Single",2,3),0))
 
+
+    # Points (living space) # T3
+    # 75
+    # =K10-1+0.75*N3+IF(K12="No",0,IF(K12="Yes",2))+(IF(K12="Yes",(ROUNDUP(L12/24.99,0)*2),IF(K12="No",-5,IF(K12="Shared",(ROUNDUP(L12/Q12/24.99,0)*2)))))
+
+    # Major Renovation # Y3
+    # False
+
+    # Renovation without EI improvement #Z3
+    # False
+
+    # Estimated Renovation # AA3
+    # null
+
+    # Video Intercom # AB3
+    # False
+
+    # Heating # AC3
+    # Central
+
+    # Single/Multi Family # AD3
+    # Multi
+
     # WOZ (unadjusted for 33% rule) # AI3
     # =IF(AND(K25="Yes",K23>2018,K10<40),K21/12090+K21/K10/80,K21/12090+K21/K10/189)
 
