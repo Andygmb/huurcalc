@@ -20,6 +20,25 @@ class HuurCalc:
     outdoor_space_shared: bool = True  # ?
     outdoor_space_residents: int = 2  # Q12
 
+    kitchen_description: str = "Modern"  # K14
+    bathroom_description: str = "Modern"  # K18
+    woz_value: int = 0  # K21
+    build_year: int = 1995  # K23
+    amsterdam_or_ultrecht: bool = False  # K25
+    has_video_intercom: bool = False  # AB3
+    heating_type: str = "Central"  # AC3
+    # TODO: is estimated_renovation a point value? ask Shane
+    estimated_renovation: int = 0  # AA3
+    renovation_without_ei_improvment: bool = False  # Z3
+    number_of_closets_storage_rooms_heated: int = 0  # M3
+    total_space_closets_storage_heated: int = 0  # N3
+    size_of_storage_room_or_bike_shed_unheated_sqm: float = 0  # O3
+    energy_label: str = "C"  # R22
+    energy_index: int = 0  # R24
+    national_monument: bool = False  # AG3
+    single_or_multi: int = 1  # AD3 # single = 0, multi = 1
+    carport: bool = False  # P3
+    major_renovation: bool = False  # Y3
     # TODO add calculations for each type based upon values in the Kitchen and Bathroom subsheet
     KITCHEN_CHOICES = {
         'Bare/Small': 1,
@@ -33,39 +52,121 @@ class HuurCalc:
         'Modern': 9.75,
         'Modern with bath': 11.75,
     }
+    ENERGY_RATINGS = [
+        "A++",
+        "A+",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+    ]
+    ENERGY_RATINGS_PTS = {
+        "lte25sqm": [[52, 48, 44, 40, 36, 32, 22, 4, 0], [48, 44, 40, 36, 32, 28, 15, 1, 0]],
+        "gt25sqmlt40sqm": [[48, 44, 40, 36, 32, 22, 14, 4, 0], [44, 40, 36, 32, 28, 15, 11, 1, 0]],
+        "gt40sqmlte200sqm": [[44, 40, 36, 32, 22, 14, 8, 4, 0], [40, 36, 32, 28, 15, 11, 5, 1, 0]]
+    }
+    YEAR_RATING_PTS = {2023: [36, 32], 2022: [36, 32], 2021: [36, 32], 2020: [36, 32], 2019: [36, 32], 2018: [36, 32],
+                       2017: [36, 32], 2016: [36, 32], 2015: [36, 32], 2014: [36, 32], 2013: [36, 32], 2012: [36, 32],
+                       2011: [36, 32], 2010: [36, 32], 2009: [36, 32], 2008: [36, 32], 2007: [36, 32], 2006: [36, 32],
+                       2005: [36, 32], 2004: [36, 32], 2003: [36, 32], 2002: [36, 32], 2001: [32, 28], 2000: [32, 28],
+                       1999: [22, 15], 1998: [22, 15], 1997: [22, 11], 1996: [22, 11], 1995: [22, 11], 1994: [22, 11],
+                       1993: [22, 11], 1992: [22, 11], 1991: [14, 11], 1990: [14, 11], 1989: [14, 11], 1988: [14, 11],
+                       1987: [14, 11], 1986: [14, 11], 1985: [14, 11], 1984: [14, 11], 1983: [8, 5], 1982: [8, 5],
+                       1981: [8, 5], 1980: [8, 5], 1979: [8, 5], 1978: [4, 1], 1977: [4, 1], 1976: [0, 0]}
+    HEATING_TYPE_MULTIPLIERS = {
+        'Central': 2,
+        'Block': 1.5,
+        'None': 0,
+        None: 0
+    }
 
-    kitchen_description: str = "Modern"  # K14
-    bathroom_description: str = "Modern"  # K18
-    woz_value: int = 0  # K21
-    build_year: int = 1995  # K23
-    amsterdam_or_ultrecht: bool = False  # K25
-    has_video_intercom: bool = False  # AB3
-    heating_type: str = "Central"
-    # TODO: is estimated_renovation a point value? ask Shane
-    estimated_renovation: int = 0
+    def lux_points(self) -> float:  # AP3
+        return 0.0  # AP3
 
-    energy_label: str = "C"  # R22
-    energy_index: int = 0  # R24
-    national_monument: bool = False  # AG3
+    def number_of_points(self) -> float:  # Q9
+        """
+        # number of points # Q9
+        # =ROUND(self.points_for_living_space()+self.general()+self.points_for_both()+AJ3+AP3,0)
+        """
+        return ceil(
+            self.points_for_living_space() +
+            self.general() +
+            self.points_for_both() +
+            self.woz_points_adjusted() +
+            self.lux_points()
+        )
 
-    # Q9 = points
-    # Q5 = max rent price
-    # R5 = can it be reduced?
+    def woz_points_unadjusted(self) -> float:  # AI3
+        """
+        # WOZ (unadjusted for 33% rule)
+        # =IF(AND(self.amsterdam_or_ultrecht="Yes",self.build_year>2018,self.total_living_space_sqm<40),
+        #     self.woz_value/12090+self.woz_value/self.total_living_space_sqm/80,
+        #     self.woz_value/12090+self.woz_value/self.total_living_space_sqm/189
+        #     )
+        """
+        if self.amsterdam_or_ultrecht and self.build_year > 2018 and self.total_living_space_sqm < 40:
+            return self.woz_value / 12090 + self.woz_value / self.total_living_space_sqm / 80  # TODO what are these
+        return self.woz_value / 12090 + self.woz_value / self.total_living_space_sqm / 189  # TODO what are these
+        pass
 
-    # number of points # Q9
-    # =ROUND(self.points_for_living_space()+self.general()+self.points_for_both()+AJ3+AP3,0)
+    def woz_points_adjusted(self) -> float:  # AJ3
+        """
+        WOZ (adjusted if 33% rule applies)
+        # =IF(self.move_in_year=2023,
+            IF(ROUND(self.points_for_living_space()+self.general()+self.points_for_both()+AI3,0)>149,
+                0.5*(self.points_for_living_space()+self.general()+self.points_for_both()),
+                AI3),
+            IF(ROUND(self.points_for_living_space()+self.general()+self.points_for_both()+AI3,0)>142,
+                0.5*(self.points_for_living_space()+self.general()+self.points_for_both()),
+                AI3)
+            )
+        """
+        # what is this
+        some_woz_calculation = ceil(
+            self.points_for_living_space() +
+            self.general() +
+            self.points_for_both() +
+            self.woz_points_unadjusted()
+        )
+        if self.move_in_year == 2023:
+            if some_woz_calculation > 149:  # TODO whats this number from
+                return 0.5 * self.points_for_living_space() + self.general() + self.points_for_both()
+        elif some_woz_calculation > 142:  # TODO whats this number from
+            return 0.5 * self.points_for_living_space() + self.general() + self.points_for_both()
+        return self.woz_points_unadjusted()
 
-    # max legal rent price # Q5
-    # =IF(5.44 * Q9 - 10.4 < 208, 208, 5.44 * Q9 - 10.4)
+    def max_legal_rent_price(self) -> float:  # Q5
+        if 5.44 * self.number_of_points() - 10.4 < 208:
+            return 208
+        else:
+            return 5.44 * self.number_of_points() - 10.4
 
-    # can this rent price be reduced? # R5
-    # =IF(self.move_in_year=2023,IF(Q5>808,"No, If it is above 808, it cannot be reduced","Possibly. It is below 808 euro so would qualify for a reduction if this calculation is correct"),IF(Q5>763,"No, If it is above 763, it cannot be reduced","Possibly. It is below 763 euro so would qualify for a reduction if this calculation is correct"))
-
-    # Points from Energy label # AH3
-    # =IF(ISBLANK(self.energy_index),IF(AND(self.build_year<1976,self.energy_label="None"),0,IF(AND(self.build_year>=1976,self.energy_label="None"),INDEX($'Energy Data Dont touch'.$A$20:$D$66,MATCH(self.build_year,$'Energy Data Dont touch'.$A$20:$A$66,0),IF(AD3="Single",3,IF(AD3="Multi",4))),IF(self.total_living_space_sqm<=25,VLOOKUP("*"&(self.energy_label)&"*",$'Energy Data Dont touch'.$B$3:$D$11,IF(AD3="Single",2,IF(AD3="Multi",3)),),IF(AND(self.total_living_space_sqm>25,self.total_living_space_sqm<=40),VLOOKUP("*"&(self.energy_label)&"*",$'Energy Data Dont touch'.$G$3:$I$11,IF(AD3="Single",2,IF(AD3="Multi",3)),0),IF(AND(self.total_living_space_sqm>40,$self.total_living_space_sqm<=200),VLOOKUP("*"&(self.energy_label)&"*",$'Energy Data Dont touch'.$L$3:$N$11,IF(AD3="Single",2,IF(AD3="Multi",3)),0)))))),VLOOKUP(self.energy_index,$'Energy Data Dont touch'.$G$19:$I$319,IF(AD3="Single",2,3),0))
-
-    number_of_closets_storage_rooms_heated = 0  # M3
-    total_space_closets_storage_heated = 0  # N3
+    def can_rent_be_reduced(self) -> tuple[bool, str]:  # R5
+        """
+        # can this rent price be reduced? # R5
+        # =IF(self.move_in_year=2023,
+            IF(Q5>808,
+                "No, If it is above 808, it cannot be reduced",
+                "Possibly. It is below 808 euro so would qualify for a reduction if this calculation is correct"
+                ),
+            IF(Q5>763,
+                "No, If it is above 763, it cannot be reduced",
+                "Possibly. It is below 763 euro so would qualify for a reduction if this calculation is correct")
+                )
+        """
+        if self.move_in_year == 2023:
+            if self.max_legal_rent_price() > 808:
+                return False, "No, If it is above 808, it cannot be reduced"
+            else:
+                return True, "Possibly. It is below 808 euro so would qualify for a reduction if this calculation is correct"
+        else:
+            if self.max_legal_rent_price() > 763:
+                return False, "No, If it is above 763, it cannot be reduced"
+            else:
+                return True, "Possibly. It is below 763 euro so would qualify for a reduction if this calculation is correct"
 
     def points_for_living_space(self) -> float:  # T3
         """
@@ -90,41 +191,6 @@ class HuurCalc:
                 outdoor_space_bonus_points = ceil(self.outdoor_space_sqm / 24.99) * 2
         return self.total_living_space_sqm - 1 + 0.75 * self.total_space_closets_storage_heated + outdoor_space_points + outdoor_space_bonus_points
 
-    ENERGY_RATINGS = [
-        "A++",
-        "A+",
-        "A",
-        "B",
-        "C",
-        "D",
-        "E",
-        "F",
-        "G",
-    ]
-
-    ENERGY_RATINGS_PTS = {
-        "lte25sqm": [[52, 48, 44, 40, 36, 32, 22, 4, 0], [48, 44, 40, 36, 32, 28, 15, 1, 0]],
-        "gt25sqmlt40sqm": [[48, 44, 40, 36, 32, 22, 14, 4, 0], [44, 40, 36, 32, 28, 15, 11, 1, 0]],
-        "gt40sqmlte200sqm": [[44, 40, 36, 32, 22, 14, 8, 4, 0], [40, 36, 32, 28, 15, 11, 5, 1, 0]]
-    }
-    YEAR_RATING_PTS = {2023: [36, 32], 2022: [36, 32], 2021: [36, 32], 2020: [36, 32], 2019: [36, 32], 2018: [36, 32],
-                       2017: [36, 32], 2016: [36, 32], 2015: [36, 32], 2014: [36, 32], 2013: [36, 32], 2012: [36, 32],
-                       2011: [36, 32], 2010: [36, 32], 2009: [36, 32], 2008: [36, 32], 2007: [36, 32], 2006: [36, 32],
-                       2005: [36, 32], 2004: [36, 32], 2003: [36, 32], 2002: [36, 32], 2001: [32, 28], 2000: [32, 28],
-                       1999: [22, 15], 1998: [22, 15], 1997: [22, 11], 1996: [22, 11], 1995: [22, 11], 1994: [22, 11],
-                       1993: [22, 11], 1992: [22, 11], 1991: [14, 11], 1990: [14, 11], 1989: [14, 11], 1988: [14, 11],
-                       1987: [14, 11], 1986: [14, 11], 1985: [14, 11], 1984: [14, 11], 1983: [8, 5], 1982: [8, 5],
-                       1981: [8, 5], 1980: [8, 5], 1979: [8, 5], 1978: [4, 1], 1977: [4, 1], 1976: [0, 0]}
-
-    HEATING_TYPE_MULTIPLIERS = {
-        'Central': 2,
-        'Block': 1.5,
-        'None': 0,
-        None: 0
-    }
-
-    single_or_multi = 1  # AD3 # single = 0, multi = 1
-
     def points_from_energy_label(self) -> float:  # AH3
         # Points from Energy label # AH3
         """
@@ -140,9 +206,12 @@ class HuurCalc:
                             IF(AND(self.total_living_space_sqm>40,$self.total_living_space_sqm<=200),
                                 VLOOKUP("*"&(self.energy_label)&"*",$'Energy Data Dont touch'.$L$3:$N$11,IF(AD3="Single",2,IF(AD3="Multi",3)),0)
                                 ))
-                            ))),VLOOKUP(self.energy_index,$'Energy Data Dont touch'.$G$19:$I$319,IF(AD3="Single",2,3),0))
+                            )))
+            ,VLOOKUP(self.energy_index,$'Energy Data Dont touch'.$G$19:$I$319,IF(AD3="Single",2,3),0))
         """
         if self.energy_index:
+            if self.single_or_multi == 0:
+                return "???"
             return 0.0  # TODO need to find out updated energy data dont touch sheet, ask shane
         else:
             if self.build_year < 1976 and not self.energy_label:
@@ -202,53 +271,10 @@ class HuurCalc:
             (self.estimated_renovation / 10000 * 2)
         )
 
-    # General # AK3
-    # =ROUND(IF(self.national_monument="Yes",50,0)+IF(AB3="Yes",0.25,0)+(self.number_of_main_rooms*IF(AC3="Central",2,IF(AC3="Block",1.5,IF(AC3="None",0))))+(M3*IF(AC3="Central",2,IF(AC3="Block",1.5,IF(AC3="None",0))))+self.points_from_energy_label()+AA3/10000*2,0)
-
-    # Number of closets, storage rooms(heated) # M3
-    # 0
-
-    # Total space of closets/storage rooms(heated) # N3
-    # 0
-
-    # Size of storage room/own bike shed (unheated) (sqm) # O3
-    # 0
-
-    # Carport #P3
-    # False
-
-    # Major Renovation # Y3
-    # False
-
-    # Renovation without EI improvement #Z3
-    # False
-
-    # Estimated Renovation # AA3
-    # null
-
-    # Video Intercom # AB3
-    # False
-
-    # Heating # AC3
-    # Central
-
-    # WOZ (unadjusted for 33% rule) # AI3
-    # =IF(AND(self.amsterdam_or_ultrecht="Yes",self.build_year>2018,self.total_living_space_sqm<40),self.woz_value/12090+self.woz_value/self.total_living_space_sqm/80,self.woz_value/12090+self.woz_value/self.total_living_space_sqm/189)
-
-    # WOZ (adjusted if 33% rule applies) # AJ3
-    # =IF(self.move_in_year=2023,IF(
-    #                   ROUND(self.points_for_living_space()+AK3+AO3+AI3,0)>149,0.5*(self.points_for_living_space()+AK3+AO3),AI3)
-    #                ,IF(
-    #                   ROUND(self.points_for_living_space()+AK3+AO3+AI3,0)>142,0.5*(self.points_for_living_space()+AK3+AO3),AI3)
-    #                   )
-
-    def points_for_both(self) -> float: # AO3
+    def points_for_both(self) -> float:  # AO3
         kitchen_pts = self.KITCHEN_CHOICES[self.kitchen_description]
         bathroom_pts = self.BATHROOM_CHOICES[self.bathroom_description]
         return kitchen_pts + bathroom_pts
-
-    # Points for both # AO3
-    # =VLOOKUP(self.kitchen_description,$'Kitchen and Bathroom'.$D$2:$E$6,2,0)+VLOOKUP(self.bathroom_description,$'Kitchen and Bathroom'.$D$29:$E$31,2,0)
 
     user_input_args = [
         room_studio_sqm,
@@ -301,7 +327,13 @@ class HuurCalc:
                         self.balcony,
                         self.bedshed])
         elif advanced:
-            return 0.0  # =ROUND(self.points_for_living_space()+AK3+AO3+AJ3+AP3,0)
+            return ceil(
+                self.points_for_living_space() +
+                self.general() +
+                self.points_for_both() +
+                self.woz_points_adjusted() +
+                self.lux_points()
+            )
         return 0.0
 
     @property
@@ -362,4 +394,5 @@ calculator = HuurCalc(
 
 # print(calculator.calculate_points(simple=True))
 # print(calculator.estimated_rent_price)
-print(calculator.points_for_both())
+# print(calculator.points_for_both())
+print(calculator.calculate_points(advanced=True))
