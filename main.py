@@ -1,7 +1,9 @@
 from enum import Enum
 from math import ceil
+from dataclasses import dataclass
 
 
+@dataclass
 class HuurCalc:
     room_studio_sqm: int = 0  # C4
     total_shared_area_sqm: int = 0  # D4
