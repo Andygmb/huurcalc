@@ -89,13 +89,12 @@ class HuurCalc:
     }
 
     def lux_points(self) -> float:  # AP3
-        # TODO - whats this?
         return 0.0  # AP3
 
     def number_of_points(self) -> float:  # Q9
         """
-            # number of points # Q9
-            # =ROUND(self.points_for_living_space()+self.general()+self.points_for_both()+AJ3+AP3,0)
+        Returns the sum of the points for the living space, the general points, the points for both, the adjusted WOZ points,
+        and the luxury points, rounded up to the nearest integer.
         """
         return ceil(
             self.points_for_living_space() +
@@ -107,11 +106,8 @@ class HuurCalc:
 
     def woz_points_unadjusted(self) -> float:  # AI3
         """
-            WOZ (unadjusted for 33% rule)
-            =IF(AND(self.amsterdam_or_ultrecht="Yes",self.build_year>2018,self.total_living_space_sqm<40),
-                self.woz_value/12090+self.woz_value/self.total_living_space_sqm/80,
-                self.woz_value/12090+self.woz_value/self.total_living_space_sqm/189
-                )
+        Returns the WOZ points based on the WOZ value, the total living space, the build year, and whether the apartment is
+        located in Amsterdam or Utrecht.
         """
         if self.amsterdam_or_ultrecht and self.build_year > 2018 and self.total_living_space_sqm < 40:
             return self.woz_value / 12090 + self.woz_value / self.total_living_space_sqm / 80  # TODO what are these
@@ -119,17 +115,9 @@ class HuurCalc:
 
     def woz_points_adjusted(self) -> float:  # AJ3
         """
-        WOZ (adjusted if 33% rule applies)
-        =IF(self.move_in_year=2023,
-            IF(ROUND(self.points_for_living_space()+self.general()+self.points_for_both()+AI3,0)>149,
-                0.5*(self.points_for_living_space()+self.general()+self.points_for_both()),
-                AI3),
-            IF(ROUND(self.points_for_living_space()+self.general()+self.points_for_both()+AI3,0)>142,
-                0.5*(self.points_for_living_space()+self.general()+self.points_for_both()),
-                AI3)
-            )
+        Returns the adjusted WOZ points based on the unadjusted WOZ points and the move-in year parameter. If the adjusted WOZ
+        points are less than or equal to the unadjusted WOZ points, returns the unadjusted WOZ points.
         """
-        # what is this
         some_woz_calculation = ceil(
             self.points_for_living_space() +
             self.general() +
@@ -145,10 +133,8 @@ class HuurCalc:
 
     def max_legal_rent_price(self) -> float:  # Q5
         """
-        =IF(5.44 * Q9 - 10.4 < 208,
-            208,
-            5.44 * Q9 - 10.4
-        )
+        Returns the maximum legal rent price based on the number of points, which is the product of 5.44 and the number of
+        points, minus 10.4 if the result is greater than or equal to 208, and rounded to two decimal places.
         """
         if 5.44 * self.number_of_points() - 10.4 < 208:
             return 208.00
@@ -157,16 +143,9 @@ class HuurCalc:
 
     def can_rent_be_reduced(self) -> tuple[bool, str]:  # R5
         """
-        # can this rent price be reduced? # R5
-        # =IF(self.move_in_year=2023,
-            IF(Q5>808,
-                "No, If it is above 808, it cannot be reduced",
-                "Possibly. It is below 808 euro so would qualify for a reduction if this calculation is correct"
-                ),
-            IF(Q5>763,
-                "No, If it is above 763, it cannot be reduced",
-                "Possibly. It is below 763 euro so would qualify for a reduction if this calculation is correct")
-                )
+        Returns a tuple indicating whether the rent can be reduced and an explanation. The first element is a boolean
+        indicating whether the maximum legal rent price is less than or equal to the threshold for rent reduction, which is
+        763 for move-in year 2022 and 808 for move-in year 2023. The second element is a string explaining the result.
         """
         if self.move_in_year == 2023:
             if self.max_legal_rent_price() > 808:
@@ -183,15 +162,9 @@ class HuurCalc:
 
     def points_for_living_space(self) -> float:  # T3
         """
-            =self.total_living_space_sqm-1+0.75*N3+outdoor_space_points+(IF(
-                self.has_outdoor_space="Yes",
-                    (ROUNDUP(self.outdoor_space_sqm/24.99,0)*2),
-                    IF(self.has_outdoor_space="No",
-                        -5,
-                        IF(K12="Shared",
-                            (ROUNDUP(self.outdoor_space_sqm/self.outdoor_space_residents/24.99,0)*2))
-                            )
-                    ))
+        Returns the points for the living space based on the total living space, the total space of closets and storage that
+        is heated, and whether the apartment has outdoor space. If the apartment has outdoor space, the points are adjusted
+        based on the outdoor space's size and whether it is shared with other residents.
         """
         # TODO better name here than bonus points
         # TODO 24.99 and * 2 are magic numbers
@@ -211,22 +184,11 @@ class HuurCalc:
         )
 
     def points_from_energy_label(self) -> float | int:  # AH3
-        # Points from Energy label # AH3
         """
-         =IF(ISBLANK(self.energy_index),
-            IF(AND(self.build_year<1976,self.energy_label="None"),
-                0,
-                IF(AND(self.build_year>=1976,self.energy_label="None"),
-                    INDEX($'Energy Data Dont touch'.$A$20:$D$66,MATCH(self.build_year,$'Energy Data Dont touch'.$A$20:$A$66,0),IF(AD3="Single",3,IF(AD3="Multi",4))),
-                    IF(self.total_living_space_sqm<=25,
-                        VLOOKUP("*"&(self.energy_label)&"*",$'Energy Data Dont touch'.$B$3:$D$11,IF(AD3="Single",2,IF(AD3="Multi",3)),),
-                        IF(AND(self.total_living_space_sqm>25,self.total_living_space_sqm<=40),
-                            VLOOKUP("*"&(self.energy_label)&"*",$'Energy Data Dont touch'.$G$3:$I$11,IF(AD3="Single",2,IF(AD3="Multi",3)),0),
-                            IF(AND(self.total_living_space_sqm>40,$self.total_living_space_sqm<=200),
-                                VLOOKUP("*"&(self.energy_label)&"*",$'Energy Data Dont touch'.$L$3:$N$11,IF(AD3="Single",2,IF(AD3="Multi",3)),0)
-                                ))
-                            )))
-            ,VLOOKUP(self.energy_index,$'Energy Data Dont touch'.$G$19:$I$319,IF(AD3="Single",2,3),0))
+        Returns the points from the energy label based on the energy index, energy label, total living space, build year,
+        and whether the apartment is single or multi-occupancy. If the apartment has no energy label and was built before
+        1976, the points are zero. If the apartment has no energy label and was built in or after 1976, the points are based
+        on the build year. Otherwise, the points are based on the energy label and the size of the apartment.
         """
         if self.energy_index:
             for index_range, values in self.ENERGY_INDEX_PTS.items():
@@ -249,31 +211,8 @@ class HuurCalc:
 
     def general(self) -> float:  # AK3
         """
-        =ROUND(
-            IF(
-                self.national_monument="Yes",
-                    50,
-                    0
-                ) +
-                IF(AB3="Yes",
-                    0.25,
-                    0
-                ) +
-                (self.number_of_main_rooms * IF(
-                    AC3="Central",
-                    2,
-                    IF(AC3="Block",
-                        1.5,
-                        IF(AC3="None",0))))
-                + (
-                    M3 * IF(
-                        AC3="Central",
-                            2,
-                            IF(AC3="Block",
-                                1.5,
-                                IF(AC3="None",
-                                0
-                                ))))+AH3+AA3/10000*2,0)
+        Returns the general points based on whether the apartment is a national monument, has a video intercom, and the
+        number of main rooms and the heating type.
         """
         national_monument_pts = 50 if self.national_monument else 0
         video_intercom_pts = 0.25 if self.has_video_intercom else 0
