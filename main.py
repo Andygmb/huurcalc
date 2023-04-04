@@ -1,5 +1,5 @@
 from enum import Enum
-from math import ceil
+from math import ceil, floor
 from dataclasses import dataclass
 
 
@@ -49,9 +49,10 @@ class HuurCalc:
         'Jamies Kitchen': 20.25,
     }
     BATHROOM_CHOICES = {
-        'Basic': 8,
-        'Modern': 9.75,
-        'Modern with bath': 11.75,
+        'Bare/Small': 8,
+        'Modern': 11,
+        'Modern with bath': 12,
+        'High end': 14.75,
     }
     ENERGY_RATINGS = ["A++", "A+", "A", "B", "C", "D", "E", "F", "G", ]
     ENERGY_RATINGS_PTS = {
@@ -96,12 +97,12 @@ class HuurCalc:
         Returns the sum of the points for the living space, the general points, the points for both, the adjusted WOZ points,
         and the luxury points, rounded up to the nearest integer.
         """
-        return ceil(
+        return floor(
             self.points_for_living_space() +
             self.general_points() +
             self.points_for_both() +
             self.woz_points_adjusted() +
-            self.lux_points()
+            self.lux_points(),
         )
 
     def woz_points_unadjusted(self) -> float:  # AI3
@@ -110,26 +111,29 @@ class HuurCalc:
         located in Amsterdam or Utrecht.
         """
         if self.amsterdam_or_ultrecht and self.build_year > 2018 and self.total_living_space_sqm < 40:
-            return self.woz_value / 12090 + self.woz_value / self.total_living_space_sqm / 80  # TODO what are these
-        return self.woz_value / 12090 + self.woz_value / self.total_living_space_sqm / 189  # TODO what are these
+            return round(self.woz_value / 12090 + self.woz_value / self.total_living_space_sqm / 80, 2)  # TODO what are these
+        return round(self.woz_value / 12090 + self.woz_value / self.total_living_space_sqm / 189, 2)  # TODO what are these
 
     def woz_points_adjusted(self) -> float:  # AJ3
         """
         Returns the adjusted WOZ points based on the unadjusted WOZ points and the move-in year parameter. If the adjusted WOZ
         points are less than or equal to the unadjusted WOZ points, returns the unadjusted WOZ points.
         """
-        some_woz_calculation = ceil(
+        some_woz_calculation = round(
             self.points_for_living_space() +
             self.general_points() +
             self.points_for_both() +
-            self.woz_points_unadjusted()
+            self.woz_points_unadjusted(), 0
         )
         if self.move_in_year == 2023:
             if some_woz_calculation > 149:  # TODO whats this number from
-                return 0.5 * self.points_for_living_space() + self.general_points() + self.points_for_both()
+                return ceil(0.5 * (self.points_for_living_space() + self.general_points() + self.points_for_both()))
+            else:
+                return self.woz_points_unadjusted()
         elif some_woz_calculation > 142:  # TODO whats this number from
-            return 0.5 * self.points_for_living_space() + self.general_points() + self.points_for_both()
-        return self.woz_points_unadjusted()
+            return ceil(0.5 * (self.points_for_living_space() + self.general_points() + self.points_for_both()))
+        else:
+            return self.woz_points_unadjusted()
 
     def max_legal_rent_price(self) -> float:  # Q5
         """
@@ -175,13 +179,7 @@ class HuurCalc:
                 outdoor_space_bonus_points = ceil(self.outdoor_space_sqm / self.outdoor_space_residents / 24.99) * 2
             else:
                 outdoor_space_bonus_points = ceil(self.outdoor_space_sqm / 24.99) * 2
-        return (self.total_living_space_sqm -
-                1 +
-                0.75 *
-                self.total_space_closets_storage_heated +
-                outdoor_space_points +
-                outdoor_space_bonus_points
-        )
+        return (self.total_living_space_sqm - 1 + 0.75 * self.total_space_closets_storage_heated + outdoor_space_points + outdoor_space_bonus_points)
 
     def points_from_energy_label(self) -> float | int:  # AH3
         """
@@ -193,19 +191,18 @@ class HuurCalc:
         if self.energy_index:
             for index_range, values in self.ENERGY_INDEX_PTS.items():
                 if index_range[0] <= self.energy_index <= index_range[1]:
-                    return values[0] if self.single_or_multi == 0 else values[1]
+                    return values[self.single_or_multi]
         else:
             if self.build_year < 1976 and not self.energy_label:
                 return 0.0
             elif self.build_year >= 1976 and not self.energy_label:
                 for index_range, values in self.YEAR_RATING_PTS.items():
                     if index_range[0] <= self.build_year <= index_range[1]:
-                        return values[0] if self.single_or_multi == 0 else values[1]
+                        return values[self.single_or_multi]
             else:
                 for index_range, values in self.ENERGY_RATINGS_PTS.items():
                     if index_range[0] <= self.total_living_space_sqm <= index_range[1]:
-                        return values[0][self.ENERGY_RATINGS.index(self.energy_label)] if self.single_or_multi == 0 else \
-                        values[1][self.ENERGY_RATINGS.index(self.energy_label)]
+                        return values[self.single_or_multi][self.ENERGY_RATINGS.index(self.energy_label)]
 
         raise Exception
 
@@ -269,13 +266,18 @@ class HuurCalc:
                         self.balcony,
                         self.bedshed])
         elif advanced:
-            return ceil(
-                self.points_for_living_space() +
-                self.general_points() +
-                self.points_for_both() +
-                self.woz_points_adjusted() +
-                self.lux_points()
-            )
+            print(f"""
+{self.points_from_energy_label()=} ✔
+{self.points_for_living_space()=} ✔
+{self.woz_points_unadjusted()=} ✔
+{self.max_legal_rent_price()=} ✔
+{self.woz_points_adjusted()=} ✔
+{self.number_of_points()=}✔ 
+{self.points_for_both()=} ✔
+{self.general_points()=} ✔
+{self.lux_points()=} ✔
+""")
+            return self.number_of_points()
         return 0.0
 
     @property
@@ -334,17 +336,17 @@ calculator = HuurCalc(
     total_residents=1,  #
     # advanced calc values
     move_in_year=2023,  # K5
-    number_of_main_rooms=1,  # K8
-    total_living_space_sqm=74,  # K10
-    has_outdoor_space=True,  # K12
+    number_of_main_rooms=2,  # K8
+    total_living_space_sqm=45,  # K10
+    has_outdoor_space=False,  # K12
     outdoor_space_sqm=0,  # L12
-    outdoor_space_shared=True,  # ?
-    outdoor_space_residents=2,  # Q12
-    kitchen_description="Modern",  # K14
+    outdoor_space_shared=False,  # ?
+    outdoor_space_residents=0,  # Q12
+    kitchen_description="Basic Essential",  # K14
     bathroom_description="Modern",  # K18
-    woz_value=0,  # K21
-    build_year=1995,  # K23
-    amsterdam_or_ultrecht=False,  # K25
+    woz_value=292000,  # K21
+    build_year=2019,  # K23
+    amsterdam_or_ultrecht=True,  # K25
     has_video_intercom=False,  # AB3
     heating_type="Central",  # AC3
     estimated_renovation=0,  # AA3
@@ -352,8 +354,8 @@ calculator = HuurCalc(
     number_of_closets_storage_rooms_heated=0,  # M3
     total_space_closets_storage_heated=0,  # N3
     size_of_storage_room_or_bike_shed_unheated_sqm=0,  # O3
-    energy_label="C",  # R22
-    energy_index=3,  # R24
+    energy_label="A",  # R22
+    energy_index=None,  # R24
     national_monument=False,  # AG3
     single_or_multi=1,  # AD3 # single = 0, multi = 1
     carport=False,  # P3
