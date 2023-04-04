@@ -21,7 +21,6 @@ class HuurCalc:
     outdoor_space_sqm: int = 0  # L12
     outdoor_space_shared: bool = True  # ?
     outdoor_space_residents: int = 2  # Q12
-
     kitchen_description: str = "Modern"  # K14
     bathroom_description: str = "Modern"  # K18
     woz_value: int = 0  # K21
@@ -36,7 +35,7 @@ class HuurCalc:
     total_space_closets_storage_heated: int = 0  # N3
     size_of_storage_room_or_bike_shed_unheated_sqm: float = 0  # O3
     energy_label: str = "C"  # R22
-    energy_index: int = 0  # R24
+    energy_index: int = 3  # R24
     national_monument: bool = False  # AG3
     single_or_multi: int = 1  # AD3 # single = 0, multi = 1
     carport: bool = False  # P3
@@ -112,7 +111,6 @@ class HuurCalc:
         if self.amsterdam_or_ultrecht and self.build_year > 2018 and self.total_living_space_sqm < 40:
             return self.woz_value / 12090 + self.woz_value / self.total_living_space_sqm / 80  # TODO what are these
         return self.woz_value / 12090 + self.woz_value / self.total_living_space_sqm / 189  # TODO what are these
-        pass
 
     def woz_points_adjusted(self) -> float:  # AJ3
         """
@@ -193,7 +191,7 @@ class HuurCalc:
                 outdoor_space_bonus_points = ceil(self.outdoor_space_sqm / 24.99) * 2
         return self.total_living_space_sqm - 1 + 0.75 * self.total_space_closets_storage_heated + outdoor_space_points + outdoor_space_bonus_points
 
-    def points_from_energy_label(self) -> float:  # AH3
+    def points_from_energy_label(self) -> float | int:  # AH3
         # Points from Energy label # AH3
         """
          =IF(ISBLANK(self.energy_index),
@@ -212,9 +210,26 @@ class HuurCalc:
             ,VLOOKUP(self.energy_index,$'Energy Data Dont touch'.$G$19:$I$319,IF(AD3="Single",2,3),0))
         """
         if self.energy_index:
-            if self.single_or_multi == 0:
-                return "???"
-            return 0.0  # TODO need to find out updated energy data dont touch sheet, ask shane
+            if self.energy_index <= 0.60:
+                return 44 if self.single_or_multi == 0 else 40
+            elif 0.61 <= self.energy_index <= 0.80:
+                return 40 if self.single_or_multi == 0 else 36
+            elif 0.81 <= self.energy_index <= 1.20:
+                return 36 if self.single_or_multi == 0 else 32
+            elif 1.21 <= self.energy_index <= 1.40:
+                return 32 if self.single_or_multi == 0 else 28
+            elif 1.21 <= self.energy_index <= 1.40:
+                return 32 if self.single_or_multi == 0 else 28
+            elif 1.41 <= self.energy_index <= 1.80:
+                return 22 if self.single_or_multi == 0 else 15
+            elif 1.81 <= self.energy_index <= 2.10:
+                return 14 if self.single_or_multi == 0 else 11
+            elif 2.11 <= self.energy_index <= 2.40:
+                return 8 if self.single_or_multi == 0 else 5
+            elif 2.41 <= self.energy_index <= 2.70:
+                return 4 if self.single_or_multi == 0 else 1
+            elif 2.71 <= self.energy_index:
+                return 0
         else:
             if self.build_year < 1976 and not self.energy_label:
                 return 0.0
