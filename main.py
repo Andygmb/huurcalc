@@ -93,8 +93,8 @@ class HuurCalc:
 
     def number_of_points(self) -> float:  # Q9
         """
-        Returns the sum of the points for the living space, the general points, the points for both, the adjusted WOZ points,
-        and the luxury points, rounded up to the nearest integer.
+        Returns the sum of the points for the living space, the general points, the points for both, the adjusted WOZ
+        points, and the luxury points, rounded up to the nearest integer.
         """
         return floor(
             self.points_for_living_space() +
@@ -106,17 +106,19 @@ class HuurCalc:
 
     def woz_points_unadjusted(self) -> float:  # AI3
         """
-        Returns the WOZ points based on the WOZ value, the total living space, the build year, and whether the apartment is
-        located in Amsterdam or Utrecht.
+        Returns the WOZ points based on the WOZ value, the total living space, the build year, and whether the
+        apartment is located in Amsterdam or Utrecht.
         """
         if self.amsterdam_or_ultrecht and self.build_year > 2018 and self.total_living_space_sqm < 40:
-            return round(self.woz_value / 12090 + self.woz_value / self.total_living_space_sqm / 80, 2)  # TODO what are these
-        return round(self.woz_value / 12090 + self.woz_value / self.total_living_space_sqm / 189, 2)  # TODO what are these
+            return round(self.woz_value / 12090 + self.woz_value / self.total_living_space_sqm / 80, 2)  # TODO what
+            # are these
+        return round(self.woz_value / 12090 + self.woz_value / self.total_living_space_sqm / 189, 2)  # TODO what are
+        # these
 
     def woz_points_adjusted(self) -> float:  # AJ3
         """
-        Returns the adjusted WOZ points based on the unadjusted WOZ points and the move-in year parameter. If the adjusted WOZ
-        points are less than or equal to the unadjusted WOZ points, returns the unadjusted WOZ points.
+        Returns the adjusted WOZ points based on the unadjusted WOZ points and the move-in year parameter. If the
+        adjusted WOZ points are less than or equal to the unadjusted WOZ points, returns the unadjusted WOZ points.
         """
         some_woz_calculation = round(
             self.points_for_living_space() +
@@ -136,8 +138,8 @@ class HuurCalc:
 
     def max_legal_rent_price(self) -> float:  # Q5
         """
-        Returns the maximum legal rent price based on the number of points, which is the product of 5.44 and the number of
-        points, minus 10.4 if the result is greater than or equal to 208, and rounded to two decimal places.
+        Returns the maximum legal rent price based on the number of points, which is the product of 5.44 and the
+        number of points, minus 10.4 if the result is greater than or equal to 208, and rounded to two decimal places.
         """
         if 5.44 * self.number_of_points() - 10.4 < 208:
             return 208.00
@@ -147,8 +149,9 @@ class HuurCalc:
     def can_rent_be_reduced(self) -> tuple[bool, str]:  # R5
         """
         Returns a tuple indicating whether the rent can be reduced and an explanation. The first element is a boolean
-        indicating whether the maximum legal rent price is less than or equal to the threshold for rent reduction, which is
-        763 for move-in year 2022 and 808 for move-in year 2023. The second element is a string explaining the result.
+        indicating whether the maximum legal rent price is less than or equal to the threshold for rent reduction,
+        which is 763 for move-in year 2022 and 808 for move-in year 2023. The second element is a string explaining
+        the result.
         """
         if self.move_in_year == 2023:
             if self.max_legal_rent_price() > 808:
@@ -165,9 +168,9 @@ class HuurCalc:
 
     def points_for_living_space(self) -> float:  # T3
         """
-        Returns the points for the living space based on the total living space, the total space of closets and storage that
-        is heated, and whether the apartment has outdoor space. If the apartment has outdoor space, the points are adjusted
-        based on the outdoor space's size and whether it is shared with other residents.
+        Returns the points for the living space based on the total living space, the total space of closets and
+        storage that is heated, and whether the apartment has outdoor space. If the apartment has outdoor space,
+        the points are adjusted based on the outdoor space's size and whether it is shared with other residents.
         """
         # TODO better name here than bonus points
         # TODO 24.99 and * 2 are magic numbers
@@ -178,14 +181,16 @@ class HuurCalc:
                 outdoor_space_bonus_points = ceil(self.outdoor_space_sqm / self.outdoor_space_residents / 24.99) * 2
             else:
                 outdoor_space_bonus_points = ceil(self.outdoor_space_sqm / 24.99) * 2
-        return self.total_living_space_sqm - 1 + 0.75 * self.total_space_closets_storage_heated + outdoor_space_points + outdoor_space_bonus_points
+        return self.total_living_space_sqm - 1 + 0.75 * \
+            self.total_space_closets_storage_heated + outdoor_space_points + outdoor_space_bonus_points
 
     def points_from_energy_label(self) -> float | int:  # AH3
         """
-        Returns the points from the energy label based on the energy index, energy label, total living space, build year,
-        and whether the apartment is single or multi-occupancy. If the apartment has no energy label and was built before
-        1976, the points are zero. If the apartment has no energy label and was built in or after 1976, the points are based
-        on the build year. Otherwise, the points are based on the energy label and the size of the apartment.
+        Returns the points from the energy label based on the energy index, energy label, total living space,
+        build year, and whether the apartment is single or multi-occupancy. If the apartment has no energy label and
+        was built before 1976, the points are zero. If the apartment has no energy label and was built in or after
+        1976, the points are based on the build year. Otherwise, the points are based on the energy label and the
+        size of the apartment.
         """
         if self.energy_index:
             for index_range, values in self.ENERGY_INDEX_PTS.items():
@@ -242,7 +247,6 @@ class HuurCalc:
 {self.lux_points()=} ✔
 """)
         return self.number_of_points()
-
 
 
 calculator = HuurCalc(
