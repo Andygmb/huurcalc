@@ -53,17 +53,7 @@ class HuurCalc:
         'Modern': 9.75,
         'Modern with bath': 11.75,
     }
-    ENERGY_RATINGS = [
-        "A++",
-        "A+",
-        "A",
-        "B",
-        "C",
-        "D",
-        "E",
-        "F",
-        "G",
-    ]
+    ENERGY_RATINGS = ["A++", "A+", "A", "B", "C", "D", "E", "F", "G", ]
     ENERGY_RATINGS_PTS = {
         (0, 25): [[52, 48, 44, 40, 36, 32, 22, 4, 0], [48, 44, 40, 36, 32, 28, 15, 1, 0]],
         (25, 40): [[48, 44, 40, 36, 32, 22, 14, 4, 0], [44, 40, 36, 32, 28, 15, 11, 1, 0]],
@@ -99,12 +89,13 @@ class HuurCalc:
     }
 
     def lux_points(self) -> float:  # AP3
+        # TODO - whats this?
         return 0.0  # AP3
 
     def number_of_points(self) -> float:  # Q9
         """
-        # number of points # Q9
-        # =ROUND(self.points_for_living_space()+self.general()+self.points_for_both()+AJ3+AP3,0)
+            # number of points # Q9
+            # =ROUND(self.points_for_living_space()+self.general()+self.points_for_both()+AJ3+AP3,0)
         """
         return ceil(
             self.points_for_living_space() +
@@ -116,11 +107,11 @@ class HuurCalc:
 
     def woz_points_unadjusted(self) -> float:  # AI3
         """
-        # WOZ (unadjusted for 33% rule)
-        # =IF(AND(self.amsterdam_or_ultrecht="Yes",self.build_year>2018,self.total_living_space_sqm<40),
-        #     self.woz_value/12090+self.woz_value/self.total_living_space_sqm/80,
-        #     self.woz_value/12090+self.woz_value/self.total_living_space_sqm/189
-        #     )
+            WOZ (unadjusted for 33% rule)
+            =IF(AND(self.amsterdam_or_ultrecht="Yes",self.build_year>2018,self.total_living_space_sqm<40),
+                self.woz_value/12090+self.woz_value/self.total_living_space_sqm/80,
+                self.woz_value/12090+self.woz_value/self.total_living_space_sqm/189
+                )
         """
         if self.amsterdam_or_ultrecht and self.build_year > 2018 and self.total_living_space_sqm < 40:
             return self.woz_value / 12090 + self.woz_value / self.total_living_space_sqm / 80  # TODO what are these
@@ -129,7 +120,7 @@ class HuurCalc:
     def woz_points_adjusted(self) -> float:  # AJ3
         """
         WOZ (adjusted if 33% rule applies)
-        # =IF(self.move_in_year=2023,
+        =IF(self.move_in_year=2023,
             IF(ROUND(self.points_for_living_space()+self.general()+self.points_for_both()+AI3,0)>149,
                 0.5*(self.points_for_living_space()+self.general()+self.points_for_both()),
                 AI3),
@@ -153,10 +144,16 @@ class HuurCalc:
         return self.woz_points_unadjusted()
 
     def max_legal_rent_price(self) -> float:  # Q5
+        """
+        =IF(5.44 * Q9 - 10.4 < 208,
+            208,
+            5.44 * Q9 - 10.4
+        )
+        """
         if 5.44 * self.number_of_points() - 10.4 < 208:
-            return 208
+            return 208.00
         else:
-            return 5.44 * self.number_of_points() - 10.4
+            return round(5.44 * self.number_of_points() - 10.4, 2)
 
     def can_rent_be_reduced(self) -> tuple[bool, str]:  # R5
         """
@@ -175,12 +172,14 @@ class HuurCalc:
             if self.max_legal_rent_price() > 808:
                 return False, "No, If it is above 808, it cannot be reduced"
             else:
-                return True, "Possibly. It is below 808 euro so would qualify for a reduction if this calculation is correct"
+                return True, "Possibly. It is below 808 euro so would qualify for a reduction if this calculation is " \
+                             "correct "
         else:
             if self.max_legal_rent_price() > 763:
                 return False, "No, If it is above 763, it cannot be reduced"
             else:
-                return True, "Possibly. It is below 763 euro so would qualify for a reduction if this calculation is correct"
+                return True, "Possibly. It is below 763 euro so would qualify for a reduction if this calculation is " \
+                             "correct "
 
     def points_for_living_space(self) -> float:  # T3
         """
@@ -203,7 +202,13 @@ class HuurCalc:
                 outdoor_space_bonus_points = ceil(self.outdoor_space_sqm / self.outdoor_space_residents / 24.99) * 2
             else:
                 outdoor_space_bonus_points = ceil(self.outdoor_space_sqm / 24.99) * 2
-        return self.total_living_space_sqm - 1 + 0.75 * self.total_space_closets_storage_heated + outdoor_space_points + outdoor_space_bonus_points
+        return (self.total_living_space_sqm -
+                1 +
+                0.75 *
+                self.total_space_closets_storage_heated +
+                outdoor_space_points +
+                outdoor_space_bonus_points
+        )
 
     def points_from_energy_label(self) -> float | int:  # AH3
         # Points from Energy label # AH3
@@ -237,7 +242,8 @@ class HuurCalc:
             else:
                 for index_range, values in self.ENERGY_RATINGS_PTS.items():
                     if index_range[0] <= self.total_living_space_sqm <= index_range[1]:
-                        return values[0][self.ENERGY_RATINGS.index(self.energy_label)] if self.single_or_multi == 0 else values[1][self.ENERGY_RATINGS.index(self.energy_label)]
+                        return values[0][self.ENERGY_RATINGS.index(self.energy_label)] if self.single_or_multi == 0 else \
+                        values[1][self.ENERGY_RATINGS.index(self.energy_label)]
 
         raise Exception
 
@@ -288,16 +294,6 @@ class HuurCalc:
         bathroom_pts = self.BATHROOM_CHOICES[self.bathroom_description]
         return kitchen_pts + bathroom_pts
 
-    user_input_args = [
-        room_studio_sqm,
-        total_shared_area_sqm,
-        shared_living_room,
-        shared_kitchen,
-        shared_shower,
-        shared_toilet,
-        total_residents
-    ]
-
     # ask shane where these numbers are from
     MAGIC_NUMBER_DEPENDANT_ROOM_MULTIPLIER = 5
     MAGIC_NUMBER_HEATING_MULTIPLIER = 0.75
@@ -322,11 +318,6 @@ class HuurCalc:
             "own_points": 15
         }
     }
-
-    def __init__(self, *args, **kwargs):
-        for k, v in kwargs.items():
-            if hasattr(self, k):
-                setattr(self, k, v)
 
     def calculate_points(self, simple=False, advanced=False) -> float:
         if simple:
@@ -430,7 +421,9 @@ calculator = HuurCalc(
     major_renovation=False,  # Y3
 )
 
-# print(calculator.calculate_points(simple=True))
-# print(calculator.estimated_rent_price)
-# print(calculator.points_for_both())
-print(calculator.calculate_points(advanced=True))
+
+print(f"""
+Points calculated: {calculator.calculate_points(advanced=True)}
+Max legal rent price: €{calculator.max_legal_rent_price()}
+Can rent be reduced? {calculator.can_rent_be_reduced()}
+""")
