@@ -77,6 +77,19 @@ class HuurCalc:
                        1993: [22, 11], 1992: [22, 11], 1991: [14, 11], 1990: [14, 11], 1989: [14, 11], 1988: [14, 11],
                        1987: [14, 11], 1986: [14, 11], 1985: [14, 11], 1984: [14, 11], 1983: [8, 5], 1982: [8, 5],
                        1981: [8, 5], 1980: [8, 5], 1979: [8, 5], 1978: [4, 1], 1977: [4, 1], 1976: [0, 0]}
+
+    ENERGY_INDEX_PTS = {
+        (0, 0.60): (44, 40),
+        (0.61, 0.80): (40, 36),
+        (0.81, 1.20): (36, 32),
+        (1.21, 1.40): (32, 28),
+        (1.41, 1.80): (22, 15),
+        (1.81, 2.10): (14, 11),
+        (2.11, 2.40): (8, 5),
+        (2.41, 2.70): (4, 1),
+        (2.71, float('inf')): (0, 0)
+    }
+
     HEATING_TYPE_MULTIPLIERS = {
         'Central': 2,
         'Block': 1.5,
@@ -210,26 +223,9 @@ class HuurCalc:
             ,VLOOKUP(self.energy_index,$'Energy Data Dont touch'.$G$19:$I$319,IF(AD3="Single",2,3),0))
         """
         if self.energy_index:
-            if self.energy_index <= 0.60:
-                return 44 if self.single_or_multi == 0 else 40
-            elif 0.61 <= self.energy_index <= 0.80:
-                return 40 if self.single_or_multi == 0 else 36
-            elif 0.81 <= self.energy_index <= 1.20:
-                return 36 if self.single_or_multi == 0 else 32
-            elif 1.21 <= self.energy_index <= 1.40:
-                return 32 if self.single_or_multi == 0 else 28
-            elif 1.21 <= self.energy_index <= 1.40:
-                return 32 if self.single_or_multi == 0 else 28
-            elif 1.41 <= self.energy_index <= 1.80:
-                return 22 if self.single_or_multi == 0 else 15
-            elif 1.81 <= self.energy_index <= 2.10:
-                return 14 if self.single_or_multi == 0 else 11
-            elif 2.11 <= self.energy_index <= 2.40:
-                return 8 if self.single_or_multi == 0 else 5
-            elif 2.41 <= self.energy_index <= 2.70:
-                return 4 if self.single_or_multi == 0 else 1
-            elif 2.71 <= self.energy_index:
-                return 0
+            for index_range, values in self.ENERGY_INDEX_PTS.items():
+                if index_range[0] <= self.energy_index <= index_range[1]:
+                    return values[0] if self.single_or_multi == 0 else values[1]
         else:
             if self.build_year < 1976 and not self.energy_label:
                 return 0.0
