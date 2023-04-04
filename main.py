@@ -396,13 +396,39 @@ class HuurCalc:
 
 
 calculator = HuurCalc(
-    room_studio_sqm=59,
-    total_shared_area_sqm=0,
-    shared_living_room=False,
-    shared_kitchen=False,
-    shared_shower=False,
-    shared_toilet=False,
-    total_residents=1
+    room_studio_sqm = 0,  # C4
+    total_shared_area_sqm = 0,  # D4
+    shared_living_room = False,  # e4
+    shared_kitchen= False, # F4
+    shared_shower= False,  # G4
+    shared_toilet= False,  # H4
+    total_residents= 1,  #
+    # advanced calc values
+    move_in_year = 2023,  # K5
+    number_of_main_rooms = 1,  # K8
+    total_living_space_sqm = 74,  # K10
+    has_outdoor_space= True,  # K12
+    outdoor_space_sqm= 0,  # L12
+    outdoor_space_shared= True,  # ?
+    outdoor_space_residents= 2,  # Q12
+    kitchen_description= "Modern",  # K14
+    bathroom_description= "Modern",  # K18
+    woz_value= 0,  # K21
+    build_year= 1995,  # K23
+    amsterdam_or_ultrecht= False,  # K25
+    has_video_intercom= False,  # AB3
+    heating_type= "Central",  # AC3
+    estimated_renovation= 0,  # AA3
+    renovation_without_ei_improvment= False,  # Z3
+    number_of_closets_storage_rooms_heated= 0,  # M3
+    total_space_closets_storage_heated= 0,  # N3
+    size_of_storage_room_or_bike_shed_unheated_sqm = 0,  # O3
+    energy_label= "C",  # R22
+    energy_index= 3,  # R24
+    national_monument= False,  # AG3
+    single_or_multi= 1,  # AD3 # single = 0, multi = 1
+    carport= False,  # P3
+    major_renovation= False,  # Y3
 )
 
 # print(calculator.calculate_points(simple=True))
