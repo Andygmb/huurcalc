@@ -65,19 +65,20 @@ class HuurCalc:
         "G",
     ]
     ENERGY_RATINGS_PTS = {
-        "lte25sqm": [[52, 48, 44, 40, 36, 32, 22, 4, 0], [48, 44, 40, 36, 32, 28, 15, 1, 0]],
-        "gt25sqmlt40sqm": [[48, 44, 40, 36, 32, 22, 14, 4, 0], [44, 40, 36, 32, 28, 15, 11, 1, 0]],
-        "gt40sqmlte200sqm": [[44, 40, 36, 32, 22, 14, 8, 4, 0], [40, 36, 32, 28, 15, 11, 5, 1, 0]]
+        (0, 25): [[52, 48, 44, 40, 36, 32, 22, 4, 0], [48, 44, 40, 36, 32, 28, 15, 1, 0]],
+        (25, 40): [[48, 44, 40, 36, 32, 22, 14, 4, 0], [44, 40, 36, 32, 28, 15, 11, 1, 0]],
+        (40, 200): [[44, 40, 36, 32, 22, 14, 8, 4, 0], [40, 36, 32, 28, 15, 11, 5, 1, 0]]
     }
-    YEAR_RATING_PTS = {2023: [36, 32], 2022: [36, 32], 2021: [36, 32], 2020: [36, 32], 2019: [36, 32], 2018: [36, 32],
-                       2017: [36, 32], 2016: [36, 32], 2015: [36, 32], 2014: [36, 32], 2013: [36, 32], 2012: [36, 32],
-                       2011: [36, 32], 2010: [36, 32], 2009: [36, 32], 2008: [36, 32], 2007: [36, 32], 2006: [36, 32],
-                       2005: [36, 32], 2004: [36, 32], 2003: [36, 32], 2002: [36, 32], 2001: [32, 28], 2000: [32, 28],
-                       1999: [22, 15], 1998: [22, 15], 1997: [22, 11], 1996: [22, 11], 1995: [22, 11], 1994: [22, 11],
-                       1993: [22, 11], 1992: [22, 11], 1991: [14, 11], 1990: [14, 11], 1989: [14, 11], 1988: [14, 11],
-                       1987: [14, 11], 1986: [14, 11], 1985: [14, 11], 1984: [14, 11], 1983: [8, 5], 1982: [8, 5],
-                       1981: [8, 5], 1980: [8, 5], 1979: [8, 5], 1978: [4, 1], 1977: [4, 1], 1976: [0, 0]}
-
+    YEAR_RATING_PTS = {
+        (0, 1976): [0, 0],
+        (1977, 1978): [4, 1],
+        (1979, 1983): [8, 5],
+        (1984, 1991): [14, 11],
+        (1992, 1997): [22, 11],
+        (1998, 1999): [22, 15],
+        (2000, 2001): [32, 28],
+        (2002, 2023): [36, 32],
+    }
     ENERGY_INDEX_PTS = {
         (0, 0.60): (44, 40),
         (0.61, 0.80): (40, 36),
@@ -230,16 +231,14 @@ class HuurCalc:
             if self.build_year < 1976 and not self.energy_label:
                 return 0.0
             elif self.build_year >= 1976 and not self.energy_label:
-                return self.YEAR_RATING_PTS[self.build_year][self.single_or_multi]
-            elif self.total_living_space_sqm <= 25:
-                return self.ENERGY_RATINGS_PTS['lte25sqm'][self.single_or_multi][
-                    self.ENERGY_RATINGS.index(self.energy_label)]
-            elif 25 < self.total_living_space_sqm <= 40:
-                return self.ENERGY_RATINGS_PTS['gt25sqmlte40sqm'][self.single_or_multi][
-                    self.ENERGY_RATINGS.index(self.energy_label)]
-            elif 40 > self.total_living_space_sqm <= 200:
-                return self.ENERGY_RATINGS_PTS['gt40sqmlte200sqm'][self.single_or_multi][
-                    self.ENERGY_RATINGS.index(self.energy_label)]
+                for index_range, values in self.YEAR_RATING_PTS.items():
+                    if index_range[0] <= self.build_year <= index_range[1]:
+                        return values[0] if self.single_or_multi == 0 else values[1]
+            else:
+                for index_range, values in self.ENERGY_RATINGS_PTS.items():
+                    if index_range[0] <= self.total_living_space_sqm <= index_range[1]:
+                        return values[0][self.ENERGY_RATINGS.index(self.energy_label)] if self.single_or_multi == 0 else values[1][self.ENERGY_RATINGS.index(self.energy_label)]
+
         raise Exception
 
     def general(self) -> float:  # AK3
