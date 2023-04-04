@@ -2,6 +2,107 @@ from enum import Enum
 from math import ceil, floor
 from dataclasses import dataclass
 
+@dataclass
+class SimpleHuurCalc:
+    room_studio_sqm: int = 45  # C4
+    total_shared_area_sqm: int = 0  # D4
+    shared_living_room: bool = False  # e4
+    shared_kitchen: bool = False  # F4
+    shared_shower: bool = False  # G4
+    shared_toilet: bool = False  # H4
+    total_residents: int = 2
+
+    # ask shane where these numbers are from
+    MAGIC_NUMBER_DEPENDANT_ROOM_MULTIPLIER = 5
+    MAGIC_NUMBER_HEATING_MULTIPLIER = 0.75
+    MAGIC_NUMBER_RENT_PRICE_MULTIPLIER_1 = -0.0019
+    MAGIC_NUMBER_RENT_PRICE_MULTIPLIER_2 = 2.3917
+    MAGIC_NUMBER_RENT_PRICE_MULTIPLIER_3 = 7.5176
+
+    bonus_points_data = {
+        'kitchen': {
+            "max_residents": 5,
+            "shared_points": 4,
+            "own_points": 20
+        },
+        'toilet': {
+            "max_residents": 5,
+            "shared_points": 4,
+            "own_points": 22
+        },
+        'shower': {
+            "max_residents": 8,
+            "shared_points": 3,
+            "own_points": 15
+        }
+    }
+
+    def calculate_points(self) -> float:
+        return sum([self.dependant_room_sqm_points,
+                    self.heating_points,
+                    self.bonus_points(bonus_type="kitchen"),
+                    self.bonus_points(bonus_type="toilet"),
+                    self.bonus_points(bonus_type="shower"),
+                    self.heating_control,
+                    self.balcony,
+                    self.bedshed])
+    @property
+    def estimated_rent_price(self) -> float:
+        points = self.calculate_points()
+        return round(
+            self.MAGIC_NUMBER_RENT_PRICE_MULTIPLIER_1 * points ** 2 +
+            self.MAGIC_NUMBER_RENT_PRICE_MULTIPLIER_2 * points +
+            self.MAGIC_NUMBER_RENT_PRICE_MULTIPLIER_3,
+            2
+        )
+
+    @property
+    def dependant_room_sqm_points(self) -> float:
+        return round(
+            (self.room_studio_sqm + self.total_shared_area_sqm / (self.total_residents + 1))
+            * self.MAGIC_NUMBER_DEPENDANT_ROOM_MULTIPLIER,
+            1)
+
+    @property
+    def heating_points(self) -> float:
+        return round(self.MAGIC_NUMBER_HEATING_MULTIPLIER * self.room_studio_sqm, 2)
+
+    @property
+    def heating_control(self) -> int:
+        return 3  # assume present
+
+    @property
+    def balcony(self) -> int:
+        return 6  # assume present
+
+    @property
+    def bedshed(self) -> int:
+        return 3  # assume present
+
+    def bonus_points(self, bonus_type=None) -> int:
+        bonus_data = self.bonus_points_data.get(bonus_type)
+        if not bonus_data or bonus_type is None:
+            return 0
+        if getattr(self, f"shared_{bonus_type}"):
+            if self.total_residents > bonus_data['max_residents']:
+                return 0
+            else:
+                return bonus_data['shared_points']
+        else:
+            return bonus_data['own_points']
+
+
+simple_calculator = SimpleHuurCalc(
+    room_studio_sqm=0,  # C4
+    total_shared_area_sqm=0,  # D4
+    shared_living_room=False,  # e4
+    shared_kitchen=False,  # F4
+    shared_shower=False,  # G4
+    shared_toilet=False,  # H4
+    total_residents=1,  #
+)
+print(f"{simple_calculator.calculate_points()=}")
+
 
 @dataclass
 class HuurCalc:
@@ -179,7 +280,7 @@ class HuurCalc:
                 outdoor_space_bonus_points = ceil(self.outdoor_space_sqm / self.outdoor_space_residents / 24.99) * 2
             else:
                 outdoor_space_bonus_points = ceil(self.outdoor_space_sqm / 24.99) * 2
-        return (self.total_living_space_sqm - 1 + 0.75 * self.total_space_closets_storage_heated + outdoor_space_points + outdoor_space_bonus_points)
+        return self.total_living_space_sqm - 1 + 0.75 * self.total_space_closets_storage_heated + outdoor_space_points + outdoor_space_bonus_points
 
     def points_from_energy_label(self) -> float | int:  # AH3
         """
@@ -230,43 +331,8 @@ class HuurCalc:
         bathroom_pts = self.BATHROOM_CHOICES[self.bathroom_description]
         return kitchen_pts + bathroom_pts
 
-    # ask shane where these numbers are from
-    MAGIC_NUMBER_DEPENDANT_ROOM_MULTIPLIER = 5
-    MAGIC_NUMBER_HEATING_MULTIPLIER = 0.75
-    MAGIC_NUMBER_RENT_PRICE_MULTIPLIER_1 = -0.0019
-    MAGIC_NUMBER_RENT_PRICE_MULTIPLIER_2 = 2.3917
-    MAGIC_NUMBER_RENT_PRICE_MULTIPLIER_3 = 7.5176
-
-    bonus_points_data = {
-        'kitchen': {
-            "max_residents": 5,
-            "shared_points": 4,
-            "own_points": 20
-        },
-        'toilet': {
-            "max_residents": 5,
-            "shared_points": 4,
-            "own_points": 22
-        },
-        'shower': {
-            "max_residents": 8,
-            "shared_points": 3,
-            "own_points": 15
-        }
-    }
-
-    def calculate_points(self, simple=False, advanced=False) -> float:
-        if simple:
-            return sum([self.dependant_room_sqm_points,
-                        self.heating_points,
-                        self.bonus_points(bonus_type="kitchen"),
-                        self.bonus_points(bonus_type="toilet"),
-                        self.bonus_points(bonus_type="shower"),
-                        self.heating_control,
-                        self.balcony,
-                        self.bedshed])
-        elif advanced:
-            print(f"""
+    def calculate_points(self) -> float:
+        print(f"""
 {self.points_from_energy_label()=} ✔
 {self.points_for_living_space()=} ✔
 {self.woz_points_unadjusted()=} ✔
@@ -277,63 +343,11 @@ class HuurCalc:
 {self.general_points()=} ✔
 {self.lux_points()=} ✔
 """)
-            return self.number_of_points()
-        return 0.0
+        return self.number_of_points()
 
-    @property
-    def estimated_rent_price(self) -> float:
-        points = self.calculate_points(simple=True)
-        return round(
-            self.MAGIC_NUMBER_RENT_PRICE_MULTIPLIER_1 * points ** 2 +
-            self.MAGIC_NUMBER_RENT_PRICE_MULTIPLIER_2 * points
-            + self.MAGIC_NUMBER_RENT_PRICE_MULTIPLIER_3,
-            2
-        )
-
-    @property
-    def dependant_room_sqm_points(self) -> float:
-        return round(
-            (self.room_studio_sqm + self.total_shared_area_sqm / (self.total_residents + 1))
-            * self.MAGIC_NUMBER_DEPENDANT_ROOM_MULTIPLIER,
-            1)
-
-    @property
-    def heating_points(self) -> float:
-        return round(self.MAGIC_NUMBER_HEATING_MULTIPLIER * self.room_studio_sqm, 2)
-
-    @property
-    def heating_control(self) -> int:
-        return 3  # assume present
-
-    @property
-    def balcony(self) -> int:
-        return 6  # assume present
-
-    @property
-    def bedshed(self) -> int:
-        return 3  # assume present
-
-    def bonus_points(self, bonus_type=None) -> int:
-        bonus_data = self.bonus_points_data.get(bonus_type)
-        if not bonus_data or bonus_type is None:
-            return 0
-        if getattr(self, f"shared_{bonus_type}"):
-            if self.total_residents > bonus_data['max_residents']:
-                return 0
-            else:
-                return bonus_data['shared_points']
-        else:
-            return bonus_data['own_points']
 
 
 calculator = HuurCalc(
-    room_studio_sqm=0,  # C4
-    total_shared_area_sqm=0,  # D4
-    shared_living_room=False,  # e4
-    shared_kitchen=False,  # F4
-    shared_shower=False,  # G4
-    shared_toilet=False,  # H4
-    total_residents=1,  #
     # advanced calc values
     move_in_year=2023,  # K5
     number_of_main_rooms=2,  # K8
@@ -355,7 +369,7 @@ calculator = HuurCalc(
     total_space_closets_storage_heated=0,  # N3
     size_of_storage_room_or_bike_shed_unheated_sqm=0,  # O3
     energy_label="A",  # R22
-    energy_index=None,  # R24
+    energy_index=0,  # R24
     national_monument=False,  # AG3
     single_or_multi=1,  # AD3 # single = 0, multi = 1
     carport=False,  # P3
@@ -364,7 +378,7 @@ calculator = HuurCalc(
 
 
 print(f"""
-Points calculated: {calculator.calculate_points(advanced=True)}
+Points calculated: {calculator.calculate_points()}
 Max legal rent price: €{calculator.max_legal_rent_price()}
 Can rent be reduced? {calculator.can_rent_be_reduced()}
 """)
