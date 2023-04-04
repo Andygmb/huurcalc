@@ -98,7 +98,7 @@ class HuurCalc:
         """
         return ceil(
             self.points_for_living_space() +
-            self.general() +
+            self.general_points() +
             self.points_for_both() +
             self.woz_points_adjusted() +
             self.lux_points()
@@ -120,15 +120,15 @@ class HuurCalc:
         """
         some_woz_calculation = ceil(
             self.points_for_living_space() +
-            self.general() +
+            self.general_points() +
             self.points_for_both() +
             self.woz_points_unadjusted()
         )
         if self.move_in_year == 2023:
             if some_woz_calculation > 149:  # TODO whats this number from
-                return 0.5 * self.points_for_living_space() + self.general() + self.points_for_both()
+                return 0.5 * self.points_for_living_space() + self.general_points() + self.points_for_both()
         elif some_woz_calculation > 142:  # TODO whats this number from
-            return 0.5 * self.points_for_living_space() + self.general() + self.points_for_both()
+            return 0.5 * self.points_for_living_space() + self.general_points() + self.points_for_both()
         return self.woz_points_unadjusted()
 
     def max_legal_rent_price(self) -> float:  # Q5
@@ -209,7 +209,7 @@ class HuurCalc:
 
         raise Exception
 
-    def general(self) -> float:  # AK3
+    def general_points(self) -> float:  # AK3
         """
         Returns the general points based on whether the apartment is a national monument, has a video intercom, and the
         number of main rooms and the heating type.
@@ -271,7 +271,7 @@ class HuurCalc:
         elif advanced:
             return ceil(
                 self.points_for_living_space() +
-                self.general() +
+                self.general_points() +
                 self.points_for_both() +
                 self.woz_points_adjusted() +
                 self.lux_points()
